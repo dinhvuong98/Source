@@ -1,0 +1,14 @@
+D:\VUONG\Project .net core\Source\Service\bin\Debug\netcoreapp3.1\Services.deps.json
+D:\VUONG\Project .net core\Source\Service\bin\Debug\netcoreapp3.1\Services.dll
+D:\VUONG\Project .net core\Source\Service\bin\Debug\netcoreapp3.1\Services.pdb
+D:\VUONG\Project .net core\Source\Service\bin\Debug\netcoreapp3.1\Data.dll
+D:\VUONG\Project .net core\Source\Service\bin\Debug\netcoreapp3.1\Utilities.dll
+D:\VUONG\Project .net core\Source\Service\bin\Debug\netcoreapp3.1\Data.pdb
+D:\VUONG\Project .net core\Source\Service\bin\Debug\netcoreapp3.1\Utilities.pdb
+D:\VUONG\Project .net core\Source\Service\obj\Debug\netcoreapp3.1\Services.csprojAssemblyReference.cache
+D:\VUONG\Project .net core\Source\Service\obj\Debug\netcoreapp3.1\Services.AssemblyInfoInputs.cache
+D:\VUONG\Project .net core\Source\Service\obj\Debug\netcoreapp3.1\Services.AssemblyInfo.cs
+D:\VUONG\Project .net core\Source\Service\obj\Debug\netcoreapp3.1\Services.csproj.CoreCompileInputs.cache
+D:\VUONG\Project .net core\Source\Service\obj\Debug\netcoreapp3.1\Services.csproj.CopyComplete
+D:\VUONG\Project .net core\Source\Service\obj\Debug\netcoreapp3.1\Services.dll
+D:\VUONG\Project .net core\Source\Service\obj\Debug\netcoreapp3.1\Services.pdb
