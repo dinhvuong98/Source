@@ -1,8 +1,8 @@
-﻿using Data;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.Mvc.Routing;
+﻿using AutoMapper;
+using Data;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Services.AutoMapper;
 using Services.Implementation;
 using Services.Implementation.Account;
 using Services.Implementation.Common;
@@ -13,6 +13,8 @@ using Services.Interfaces.Account;
 using Services.Interfaces.Common;
 using Services.Interfaces.Internal;
 using Services.Interfaces.RedisCache;
+using System;
+using static Services.Implementation.Internal.CronJobService;
 
 namespace Source.App_Start
 {
@@ -29,6 +31,10 @@ namespace Source.App_Start
             services.AddTransient<ISessionService, SessionService>();
             services.AddTransient<INotificationService, NotificationService>();
             services.AddTransient<ICacheProvider, RedisCacheProvider>();
-        }   
+            services.AddTransient<IWorkService, WorkService>();
+            services.AddTransient<IFileService, FileService>();
+
+            Mapper.Initialize(cfg => cfg.AddProfile<DtoMappingProfile>());
+        }
     }
 }

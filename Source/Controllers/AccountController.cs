@@ -6,10 +6,9 @@ using Services.Dtos.Account;
 using Services.Dtos.Account.InputDtos;
 using Services.Interfaces.Account;
 using Quartz.Util;
-using Mvc.WebAPI.Controllers;
 using Services.Dtos.Response;
 
-namespace Aquaculture.Controllers
+namespace Source.Controllers
 {
     [Route("api/")]
     [Authorize]

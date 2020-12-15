@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
+using Source.Filter;
 using Utilities.Common.Dependency;
 using Utilities.Configuation;
 using Utilities.Configurations;
@@ -13,10 +14,18 @@ namespace Source.App_Start
     {
         public static void ConfigCoreService(IServiceCollection services, IConfiguration configuration)
         {
+            services.Configure<FileStorageConfig>(configuration.GetSection(nameof(FileStorageConfig)));
             services.Configure<AppSettings>(configuration.GetSection(nameof(AppSettings)));
             services.Configure<RedisCacheSettings>(configuration.GetSection(nameof(RedisCacheSettings)));
-
+            services.Configure<VStorageConfig>(configuration.GetSection(nameof(VStorageConfig)));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+            services.AddMvc(
+                    options =>
+                    {
+                        options.Filters.Add(typeof(ExceptionFilter));
+                    }
+                );
 
             services.AddMemoryCache();
 

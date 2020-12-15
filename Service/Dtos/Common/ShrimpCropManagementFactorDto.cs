@@ -2,7 +2,6 @@
 using Services.Dtos.Account;
 using System;
 
-
 namespace Services.Dtos.Common
 {
     [Serializable]
@@ -18,12 +17,12 @@ namespace Services.Dtos.Common
 
         public long ExecutionTime { get; set; }
 
-        public long FromDate { get; set; }
+        public long? FromDate { get; set; }
 
-        public long ToDate { get; set; }
+        public long? ToDate { get; set; }
 
         public DictionaryItemDto Status { get; set; }
 
-        public long ModifiedAt { get; set; }
+        public long? ModifiedAt { get; set; }
     }
 }

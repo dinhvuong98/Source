@@ -1,13 +1,12 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Mvc.WebAPI.Controllers;
 using Services.Dtos.Common;
 using Services.Dtos.Common.InputDtos;
 using Services.Interfaces.Common;
 using Services.Dtos.Response;
 
-namespace Aquaculture.Controllers
+namespace Source.Controllers
 {
     [Route("api/management-factor")]
     [Authorize]
@@ -39,11 +38,11 @@ namespace Aquaculture.Controllers
         }
             
         [HttpGet("filter/{page}/{pageSize}")]
-        public async Task<BaseResponse<ItemResultDto<ManagementFactorDto>>> GetManagementFactor([FromRoute] PageDto pageDto, [FromQuery] string searchKey, [FromQuery] string dataType, [FromQuery] string factorGroup)
+        public async Task<BaseResponse<PageResultDto<ManagementFactorDto>>> GetManagementFactor([FromRoute] PageDto pageDto, [FromQuery] string searchKey, [FromQuery] string dataType, [FromQuery] string factorGroup)
         {
-            var response = new BaseResponse<ItemResultDto<ManagementFactorDto>>
+            var response = new BaseResponse<PageResultDto<ManagementFactorDto>>
             {
-                Data = await _dataService.GetManagementFactor(pageDto, searchKey, dataType, factorGroup),
+                Data = await _dataService.FilterManagementFactor(pageDto, searchKey, dataType, factorGroup),
                 Status = true
             };
 

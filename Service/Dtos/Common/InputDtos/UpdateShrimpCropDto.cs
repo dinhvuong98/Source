@@ -3,6 +3,7 @@
 namespace Services.Dtos.Common.InputDtos
 {
     [Serializable]
+    // ke thua tu create (create co the them 1 field id null)
     public class UpdateShrimpCropDto
     {
         public Guid Id { get; set; }

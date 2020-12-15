@@ -2,7 +2,7 @@
 
 namespace Services.Dtos.Common
 {
-    public class ItemResultDto<T>
+    public class PageResultDto<T>
     {
         public Object ExtraData { get; set; }
 

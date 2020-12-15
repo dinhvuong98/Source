@@ -9,6 +9,11 @@ namespace Utilities.Enums
         NOT_EXIST,
         INTERNAL_SERVER_ERROR,
         GET_DATA_NOT_SUCCESS,
-        INVALID_PARAMETER
+        INVALID_PARAMETER,
+        FAIL,
+        VSTORAGE_ERROR,
+        INVALID_FORMAT_FILE,
+        INVALID_SIZE_FILE,
+        INVALID_STATUS
     }
 }

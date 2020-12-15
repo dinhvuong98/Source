@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Source</name>
+    </assembly>
+    <members>
+        <member name="M:Source.Controllers.FileController.UploadFile(Services.Dto.Shared.Inputs.UploadFileDto)">
+            <summary>
+            Upload file
+            </summary>
+        </member>
+        <member name="M:Source.Controllers.FileController.DownloadFile(System.String)">
+            <summary>
+            Download file
+            </summary>
+        </member>
+    </members>
+</doc>

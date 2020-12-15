@@ -26,7 +26,7 @@ namespace Data.Entity.Common
         public DateTime? ExecutionTime { get; set; }
 
         [Column("shrimp_crop_name")]
-        public string ShrimprCopName { get; set; }
+        public string ShrimpCropName { get; set; }
 
         [Column("from_date")]
         public DateTime? FromDate { get; set; }
@@ -65,8 +65,8 @@ namespace Data.Entity.Common
 
         [ForeignKey("ShrimpCropManagementFactor")]
         [Column("shrimp_crop_management_factor_id")]
-        public Guid? ShrimpCropManagementFactorId { get; set; }
 
+        public Guid? ShrimpCropManagementFactorId { get; set; }
         public virtual Work Work { get; set; }
         public virtual ManagementFactor ManagementFactor { get; set; }
         public virtual FarmingLocation FarmingLocation { get; set; }

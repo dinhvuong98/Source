@@ -5,8 +5,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Services.Implementation.Internal;
 using Source.App_Start;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using Utilities.Common.Dependency;
 
 namespace Source
@@ -65,8 +69,18 @@ namespace Source
                         new List<string>()
                     }
                 });
+
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
+                c.CustomSchemaIds(x => x.FullName);
             });
 
+            services.AddCronJob<JobService>(c =>
+            {
+                c.TimeZoneInfo = TimeZoneInfo.Local;
+                c.CronExpression = @"*/1 * * * *";
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -75,6 +89,10 @@ namespace Source
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseExceptionHandler("/error");
             }
 
             app.UseCors("AllowOrigin");
@@ -87,13 +105,14 @@ namespace Source
             loggerFactory.AddLog4Net();
 
             app.UseRouting();
-         
+
             app.UseSwagger();
 
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Aquaculture API V1");
             });
+
         }
     }
 }

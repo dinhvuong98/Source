@@ -19,7 +19,7 @@ namespace Services.Dtos.Common.InputDtos
 
         public DictionaryItemDto Frequency { get; set; }
 
-        public long ExecutionTime { get; set; }
+        public long? ExecutionTime { get; set; }
 
         public long? FromDate { get; set; }
 

@@ -30,7 +30,7 @@ namespace Data.Entity.Account
         public string Status { get; set; }
 
         [Column("last_time_read_notification")]
-        public DateTime? LastTimeResNofitication { get; set; }
+        public DateTime? LastTimeReadNotification { get; set; }
 
         [Column("email")]
         public string Email { get; set; }

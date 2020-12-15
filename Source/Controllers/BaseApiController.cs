@@ -6,7 +6,7 @@ using System.Web;
 using Microsoft.AspNetCore.Cors;
 using Services.Dto.Shared;
 
-namespace Mvc.WebAPI.Controllers
+namespace Source.Controllers
 {
     [EnableCors("AllowOrigin")]
     public class BaseApiController : ControllerBase

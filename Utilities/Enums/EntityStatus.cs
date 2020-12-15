@@ -9,4 +9,16 @@ namespace Utilities.Enums
         Alive,
         NotAlive
     }
+
+    public enum StatusWork
+    {
+        Alive,
+        Delete
+    }
+
+    public enum PictureStatus
+    {
+        Alive,
+        Delete
+    }
 }

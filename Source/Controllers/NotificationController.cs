@@ -1,15 +1,15 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Mvc.WebAPI.Controllers;
 using Services.Dtos.Common;
 using Services.Dtos.Common.InputDtos;
 using Services.Dtos.Response;
 using Services.Interfaces.Common;
 using System.Threading.Tasks;
 
-namespace WebAPI.Controllers
+namespace Source.Controllers
 {
     [Route("api/notify")]
+    [Authorize]
     public class NotificationController : BaseApiController
     {
         #region Properties
@@ -26,11 +26,35 @@ namespace WebAPI.Controllers
         #region Public methods
 
         [HttpGet("filter/{page}/{pageSize}")]
-        public async Task<BaseResponse<ItemResultDto<NotificationDto>>> GetNotification ([FromRoute] PageDto pageDto)
+        public async Task<BaseResponse<PageResultDto<NotificationDto>>> FilterNotification ([FromRoute] PageDto pageDto)
         {
-            var response = new BaseResponse<ItemResultDto<NotificationDto>>
+            var response = new BaseResponse<PageResultDto<NotificationDto>>
             {
-                Data = await _notificationService.GetNotification(pageDto),
+                Data = await _notificationService.FilterNotification(pageDto),
+                Status = true
+            };
+
+            return await Task.FromResult(response);
+        }
+
+        [HttpPatch("{id}/mark-as-read")]
+        public async Task<BaseResponse<bool>> MarkAsRead([FromRoute] string id)
+        {
+            var response = new BaseResponse<bool>
+            {
+                Data = await _notificationService.MaskAsReadNotification(id),
+                Status = true
+            };
+
+            return await Task.FromResult(response);
+        }
+
+        [HttpGet("remind")]
+        public async Task<BaseResponse<bool>> CreateRemind()
+        {
+            var response = new BaseResponse<bool>
+            {
+                Data = await _notificationService.CreateRemind(),
                 Status = true
             };
 

@@ -2,15 +2,16 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Mvc.WebAPI.Controllers;
 using Services.Dtos.Common;
 using Services.Dtos.Common.InputDtos;
 using Services.Dtos.Response;
 using Services.Interfaces.Common;
+using Services.Interfaces.RedisCache;
+using Utilities.Constants;
 using Utilities.Enums;
 using Utilities.Exceptions;
 
-namespace Aquaculture.Controllers
+namespace Source.Controllers
 {
     [Route("api/shrimp-crop")]
     [Authorize]
@@ -18,23 +19,54 @@ namespace Aquaculture.Controllers
     {
         #region Properties
         private readonly IDataService _dataService;
+        private readonly ICacheProvider _redisCache;
         #endregion
 
         #region Constructor
-        public ShrimpCropController(IDataService dataService)
+        public ShrimpCropController(IDataService dataService, ICacheProvider cache)
         {
+            _redisCache = cache;
             _dataService = dataService;
         }
         #endregion
 
         #region Public methods
 
-        [HttpGet("filter/{page}/{pageSize}")]
-        public async Task<BaseResponse<ItemResultDto<ShrimpCropDto>>> GetShrimCrop([FromRoute] PageDto pageDto, [FromQuery] string searchKey, [FromQuery] string farmingLocationId, [FromQuery] string shrimpBreedId)
+        [HttpGet("get-all")]
+        public async Task<BaseResponse<ShrimpCropDto[]>> GetAllShrimpCrop()
         {
-            var response = new BaseResponse<ItemResultDto<ShrimpCropDto>>
+            var result = _redisCache.GetByKey<ShrimpCropDto[]>(CacheConst.AllShrimpCrop);
+
+            var response = new BaseResponse<ShrimpCropDto[]>
             {
-                Data = await _dataService.GetShrimpCrop(pageDto, searchKey, farmingLocationId, shrimpBreedId),
+                Status = false
+            };
+
+            if (result == null)
+            {
+                result = await _dataService.GetAllShrimpCrop();
+                _redisCache.Set(CacheConst.AllShrimpCrop, result, TimeSpan.FromHours(1));
+            }
+
+            if(result.Length > 0)
+            {
+                response.Data = result;
+                response.Status = true;
+            }
+            else
+            {
+                response.Error = new Error("Get data not success!", ErrorCode.GET_DATA_NOT_SUCCESS);
+            }
+
+            return await Task.FromResult(response);
+        }
+
+        [HttpGet("filter/{page}/{pageSize}")]
+        public async Task<BaseResponse<PageResultDto<ShrimpCropDto>>> FilterShrimpCrop([FromRoute] PageDto pageDto, [FromQuery] string searchKey, [FromQuery] string farmingLocationId, [FromQuery] string shrimpBreedId)
+        {
+            var response = new BaseResponse<PageResultDto<ShrimpCropDto>>
+            {
+                Data = await _dataService.FilterShrimpCrop(pageDto, searchKey, farmingLocationId, shrimpBreedId),
                 Status = true
             };
 
@@ -44,7 +76,7 @@ namespace Aquaculture.Controllers
         [HttpPost("create")]
         public async Task<BaseResponse<ShrimpCropResultDto>> Create([FromBody] CreateShrimpCropDto dto)
         {
-            if(dto == null)
+            if (dto == null)
             {
                 throw new BusinessException("Invalid parameter!", ErrorCode.INVALID_PARAMETER);
             }
@@ -61,7 +93,7 @@ namespace Aquaculture.Controllers
         [HttpGet("{id}")]
         public async Task<BaseResponse<ShrimpCropResultDto>> GetShrimpCropById([FromRoute] Guid id)
         {
-            if(id == null)
+            if (id == null)
             {
                 throw new BusinessException("Invalid parameter", ErrorCode.INVALID_PARAMETER);
             }
@@ -69,23 +101,6 @@ namespace Aquaculture.Controllers
             var response = new BaseResponse<ShrimpCropResultDto>
             {
                 Data = await _dataService.GetShrimpCropById(id),
-                Status = true
-            };
-
-            return await Task.FromResult(response);
-        }
-
-        [HttpPut("update")]
-        public async Task<BaseResponse<ShrimpCropResultDto>> Update([FromBody] UpdateShrimpCropDto dto)
-        {
-            if(dto == null)
-            {
-                throw new BusinessException("Invalid parameter!", ErrorCode.INVALID_PARAMETER);
-            }
-
-            var response = new BaseResponse<ShrimpCropResultDto>
-            {
-                Data = await _dataService.UpDateShrimpCrop(dto),
                 Status = true
             };
 
@@ -110,7 +125,7 @@ namespace Aquaculture.Controllers
         }
 
         [HttpPost("management-factor/cancel")]
-        public async Task<IActionResult> CancelShrimpCropManagementFactor([FromBody] CancelShrimpCropManagementFactorDto dto)
+        public async Task<BaseResponse<bool>> CancelShrimpCropManagementFactor([FromBody] CancelShrimpCropManagementFactorDto dto)
         {
             if (dto == null)
             {
@@ -123,9 +138,8 @@ namespace Aquaculture.Controllers
                 Status = true
             };
 
-            return Ok(response);
+            return await Task.FromResult(response);
         }
-
         #endregion
     }
 }

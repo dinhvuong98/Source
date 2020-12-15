@@ -2,15 +2,15 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Mvc.WebAPI.Controllers;
 using Services.Dtos.Common;
 using Services.Dtos.Common.InputDtos;
 using Services.Dtos.Response;
 using Services.Interfaces.Common;
 using Services.Interfaces.RedisCache;
+using Utilities.Constants;
 using Utilities.Enums;
 
-namespace Aquaculture.Controllers
+namespace Source.Controllers
 {
     [Route("api/data")]
     [Authorize]
@@ -31,11 +31,11 @@ namespace Aquaculture.Controllers
 
         #region public methods
         [HttpGet("filter-area/{page}/{pageSize}")]
-        public async Task<BaseResponse<ItemResultDto<AreaDto>>> GetArea([FromRoute] PageDto pageDto,[FromQuery] string searchKey)
+        public async Task<BaseResponse<PageResultDto<AreaDto>>> FilterAreas([FromRoute] PageDto pageDto,[FromQuery] string searchKey)
         {
-            var response = new BaseResponse<ItemResultDto<AreaDto>>
+            var response = new BaseResponse<PageResultDto<AreaDto>>
             {
-                Data = await _dataService.GetAreas(pageDto, searchKey),
+                Data = await _dataService.FilterAreas(pageDto, searchKey),
                 Status = true
             };
 
@@ -43,11 +43,11 @@ namespace Aquaculture.Controllers
         }
 
         [HttpGet("filter-farming-location/{page}/{pageSize}")]
-        public async Task<BaseResponse<ItemResultDto<FarmingLocationDto>>> GetFarmingLocaiton([FromRoute] PageDto pageDto, [FromQuery] string searchKey, [FromQuery] string locationType)
+        public async Task<BaseResponse<PageResultDto<FarmingLocationDto>>> FilterFarmingLocation([FromRoute] PageDto pageDto, [FromQuery] string searchKey, [FromQuery] string locationType)
         {
-            var response = new BaseResponse<ItemResultDto<FarmingLocationDto>>
+            var response = new BaseResponse<PageResultDto<FarmingLocationDto>>
             {
-                Data = await _dataService.GetFarmingLocaiton(pageDto, searchKey, locationType),
+                Data = await _dataService.FilterFarmingLocation(pageDto, searchKey, locationType),
                 Status = true
             };
 
@@ -55,23 +55,41 @@ namespace Aquaculture.Controllers
         }
 
         [HttpGet("farming-location/get-all")]
-        public async Task<BaseResponse<ShortFarmingLocationDto[]>> GetAllFarmingLocation()
+        public async Task<BaseResponse<ShortFarmingLocationDto[]>> GetAllFarmingLocation([FromQuery] string locationType)
         {
+            var result = _redisCache.GetByKey<ShortFarmingLocationDto[]>(CacheConst.AllFarmingLocation);
+
             var response = new BaseResponse<ShortFarmingLocationDto[]>
             {
-                Data = await _dataService.GetAllFarmingLocaiton(),
-                Status = true
+                Status = false
             };
+
+            if (result == null)
+            {
+                result = await _dataService.GetAllFarmingLocaiton(locationType);
+                _redisCache.Set(CacheConst.AllFarmingLocation, result, TimeSpan.FromHours(1));
+            }
+
+            if (result.Length > 0)
+            {
+                response.Data = result;
+                response.Status = true;
+            }
+            else
+            {
+                response.Error = new Error("Get data not success!", ErrorCode.GET_DATA_NOT_SUCCESS);
+            }
+
 
             return await Task.FromResult(response);
         }
 
         [HttpGet("filter-shrimp-breed/{page}/{pageSize}")]
-        public async Task<BaseResponse<ItemResultDto<ShrimpBreedDto>>> GetShrimpBreed([FromRoute] PageDto pageDto, [FromQuery] string searchKey)
+        public async Task<BaseResponse<PageResultDto<ShrimpBreedDto>>> FilterShrimpBreed([FromRoute] PageDto pageDto, [FromQuery] string searchKey)
         {
-            var response = new BaseResponse<ItemResultDto<ShrimpBreedDto>>
+            var response = new BaseResponse<PageResultDto<ShrimpBreedDto>>
             {
-                Data = await _dataService.GetShrimpBreed(pageDto, searchKey),
+                Data = await _dataService.FilterShrimpBreed(pageDto, searchKey),
                 Status = true
             };
 
@@ -105,6 +123,7 @@ namespace Aquaculture.Controllers
                 result = await _dataService.GetMasterData(groupsName);
                 _redisCache.Set(groupsName, result, TimeSpan.FromHours(1));
             }
+
             if (result.Length > 0)
             {
                 response.Data = result;

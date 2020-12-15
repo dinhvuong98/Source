@@ -20,6 +20,6 @@ namespace Services.Dtos.Common
 
         public ShrimpBreedDto ShrimpBreed { get; set; }
 
-        public ShrimpCropManagementFactorDto[] Factor { get; set; }
+        public ShrimpCropManagementFactorDto[] Factors { get; set; }
     }
 }

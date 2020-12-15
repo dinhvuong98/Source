@@ -1,6 +1,8 @@
 ﻿using Data.Entity.Common;
 using Services.Dto.Shared;
+using Services.Dtos.Account;
 using Services.Dtos.Common;
+using Services.Dtos.Temp;
 using Services.Implementation.Account.Helpers;
 using System;
 using System.Linq;
@@ -10,7 +12,7 @@ using Utilities.Helpers;
 
 namespace Services.Implementation.Common.Helpers
 {
-    public static class  EntityToDtoConvertHelper
+    public static class EntityToDtoConvertHelper
     {
         public static MeasureUnitDto ToMeasureUnitDto(this MeasureUnit entity)
         {
@@ -105,21 +107,6 @@ namespace Services.Implementation.Common.Helpers
             return dto;
         }
 
-        public static DictionaryItemDto ToDictionaryItemDto(this MasterData entity)
-        {
-            if (entity == null) return null;
-
-            DictionaryItemDto dto = new DictionaryItemDto
-            {
-                Key = entity.Key,
-                Value = entity.Text,
-                DisplayText = entity.Text,
-                Code = entity.Value,
-                TypeGroup = entity.GroupName
-            };
-
-            return dto;
-        }
 
         public static ShrimpCropDto ToShrimpCropDto(this ShrimpCrop entity)
         {
@@ -143,29 +130,35 @@ namespace Services.Implementation.Common.Helpers
             if (entity == null) return null;
 
             ShrimpCropManagementFactorDto dto = new ShrimpCropManagementFactorDto();
+
+            dto.CopyPropertiesFrom(entity);
+
             dto.ManagementFactor = entity.ManagementFactor.ToShortManagementFactorDto();
             dto.Curator = entity.User.ToUserDto();
             dto.Frequency = entity.Frequency.ToDictionaryItemDto<ShrimpCropFrequency>();
             dto.Status = entity.Status.ToDictionaryItemDto<CropFactorStatus>();
-            dto.CopyPropertiesFrom(entity);
+            dto.FromDate = entity.FromDate.ToSecondsTimestamp();
+            dto.ToDate = entity.ToDate.ToSecondsTimestamp();
+            dto.ModifiedAt = entity.ModifiedAt.ToSecondsTimestamp();
+            dto.ExecutionTime = entity.ExecutionTime.ToSecondsTimestamp();
 
             return dto;
 
         }
 
-        public static ShrimpCropResultDto ToShrimpCropResultDto(this  ShrimpCrop entity)
+        public static ShrimpCropResultDto ToShrimpCropResultDto(this ShrimpCrop entity)
         {
             if (entity == null) return null;
 
             ShrimpCropResultDto dto = new ShrimpCropResultDto();
 
             dto.CopyPropertiesFrom(entity);
+
             dto.FarmingLocation = entity.FarmingLocation.ToShortFarmingLocationDto();
             dto.ShrimpBreed = entity.ShrimpBreed.ToShrimpBreedDto();
             dto.FromDate = entity.FromDate.ToSecondsTimestamp();
             dto.ToDate = entity.ToDate.ToSecondsTimestamp();
-
-            dto.Factor = entity.ShrimpCropManagementFactors == null ? null : entity.ShrimpCropManagementFactors.Select(x => x.ToShrimpCropManagementFactorDto()).ToArray();
+            dto.Factors = entity.ShrimpCropManagementFactors == null ? null : entity.ShrimpCropManagementFactors.OrderBy(x => x.CreatedAt).Select(x => x.ToShrimpCropManagementFactorDto()).ToArray();
 
             return dto;
         }
@@ -177,7 +170,7 @@ namespace Services.Implementation.Common.Helpers
             ShortFarmingLocationDto dto = new ShortFarmingLocationDto();
 
             dto.CopyPropertiesFrom(entity);
-           
+
             return dto;
         }
 
@@ -224,6 +217,7 @@ namespace Services.Implementation.Common.Helpers
                 Code = entity.FarmingLocationCode
             };
 
+
             NotificationDto dto = new NotificationDto()
             {
                 Id = entity.Id,
@@ -251,7 +245,7 @@ namespace Services.Implementation.Common.Helpers
                         Code = entity.ShrimpBreedCode,
                         Description = entity.ShrimpBreedDescription,
                         Attachment = entity.ShrimpBreedAttachment
-                    }
+                    },
                 },
 
                 ExecutionTime = entity.ExecutionTime.ToSecondsTimestamp(),
@@ -261,8 +255,93 @@ namespace Services.Implementation.Common.Helpers
                 CreatedAt = DateTime.UtcNow.ToSecondsTimestamp(),
                 Type = entity.Type.ToDictionaryItemDto<NotifyType>(),
                 Frequency = entity.Frequency.ToDictionaryItemDto<ShrimpCropFrequency>(),
-                FactorGroup = factorGroups
+                FactorGroup = factorGroups,
             };
+
+            return dto;
+        }
+
+        public static WorkDto ToWorkDto(this WorkResultDto entity)
+        {
+            if (entity == null) return null;
+
+            ShortFarmingLocationDto farmingLocation = new ShortFarmingLocationDto
+            {
+                Id = entity.FarmingLocationId,
+                Name = entity.FarmingLocationName,
+                Code = entity.FarmingLocationCode
+            };
+
+            ShrimpBreedDto shrimpBreed = new ShrimpBreedDto
+            {
+                Id = entity.ShrimpBreedId,
+                Name = entity.ShrimpBreedName,
+                Code = entity.ShrimpBreedCode,
+                Description = entity.ShrimpBreedDescription,
+                Attachment = entity.ShrimpBreedAttachment
+            };
+
+            WorkDto dto = new WorkDto();
+            dto.Id = entity.Id;
+            dto.Name = entity.Name;
+            dto.ExecutionTime = entity.ExecutionTime.ToSecondsTimestamp();
+            dto.Value = entity.Value;
+            dto.FarmingLocation = farmingLocation;
+
+            dto.ShrimpBreed = shrimpBreed;
+
+            dto.Curator = new UserDto
+            {
+                Id = entity.UserId,
+                FullName = entity.FullName,
+                Address = entity.Address,
+                Phone = entity.Phone,
+                Email = entity.Email,
+            };
+
+            dto.ShrimpCrop = new ShrimpCropDto
+            {
+                Id = entity.ShrimpCropId,
+                Name = entity.ShrimpCropName,
+                Code = entity.ShrimpCropCode,
+                FromDate = entity.ShrimpCropFromDate.ToSecondsTimestamp(),
+                ToDate = entity.ShrimpCropToDate.ToSecondsTimestamp(),
+                FarmingLocation = farmingLocation,
+                ShrimpBreed = shrimpBreed,
+            };
+
+            dto.ManagementFactor = new ShortManagementFactorDto
+            {
+                Id = entity.ManagementFactorId,
+                Name = entity.ManagementFactorName,
+                Code = entity.ManagementFactorCode
+            };
+
+            dto.MeasureUnit = new MeasureUnitDto
+            {
+                Id = entity.MeasureUnitId,
+                Name = entity.MeasureUnitName,
+                Desciption = entity.MeasureUnitDesciption
+            };
+
+            dto.ModifiedAt = entity.ModifiedAt.ToSecondsTimestamp();
+            dto.SampleValue = entity.SampleValue;
+            dto.Description = entity.Description;
+            dto.age = (int) (entity.ExecutionTime - entity.ShrimpCropFromDate).TotalDays;
+            dto.Pictures = entity.Pictures == null ? null : entity.Pictures.Split(',').Select(x => x.ToTempUploadDto()).ToArray();
+
+            return dto;
+        }
+
+        
+
+        public static TempUploadFileDto ToTempUploadDto(this string entity)
+        {
+            if (entity == null) return null;
+
+            TempUploadFileDto dto = new TempUploadFileDto();
+
+            dto.Id = Guid.Parse(entity);
 
             return dto;
         }

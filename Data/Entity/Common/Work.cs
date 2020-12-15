@@ -1,5 +1,6 @@
 ﻿using Data.Entity.Account;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -28,10 +29,10 @@ namespace Data.Entity.Common
         public string Value { get; set; }
 
         [Column("created_at")]
-        public DateTime? CreateAt { get; set; }
+        public DateTime? CreatedAt { get; set; }
 
         [Column("created_by")]
-        public Guid? CreateBy { get; set; }
+        public Guid? CreatedBy { get; set; }
 
         [Column("modified_at")]
         public DateTime? ModifiedAt { get; set; }
@@ -54,7 +55,6 @@ namespace Data.Entity.Common
         [Column("status")]
         public string Status { get; set; } = EntityStatus.Alive.ToString();
 
-
         public virtual User User { get; set; }
 
         public virtual FarmingLocation FarmingLocation { get; set; }
@@ -62,5 +62,11 @@ namespace Data.Entity.Common
         public virtual ShrimpBreed ShrimpBreed { get; set; }
 
         public virtual ShrimpCropManagementFactor ShrimpCropManagementFactor { get; set; }
+
+        [InverseProperty("Work")]
+        public virtual ICollection<WorkAudit> WorkAudits { get; set; }
+
+        [InverseProperty("Work")]
+        public virtual ICollection<WorkPicture> WorkPictures { get; set; }
     }
 }
