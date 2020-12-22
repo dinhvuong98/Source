@@ -345,5 +345,60 @@ namespace Services.Implementation.Common.Helpers
 
             return dto;
         }
+
+        public static AddressDto ToAddressDto(this Country entity)
+        {
+            return entity == null
+                ? null
+                : new AddressDto
+                {
+                    Id = entity.Id,
+                    Code = entity.CountryCode,
+                    Name = entity.Name,
+                    Type = AddressType.Country.ToString(),
+                    Childs = entity.Provinces.Select(x => x.ToAddressDto()).OrderBy(x => x.Name).ToArray()
+                };
+        }
+
+        public static AddressDto ToAddressDto(this Province entity)
+        {
+            return entity == null
+                ? null
+                : new AddressDto
+                {
+                    Id = entity.Id,
+                    Code = entity.ProvinceCode,
+                    Name = entity.Name,
+                    Type = AddressType.Province.ToString(),
+                    Childs = entity.Districts.Select(x => x.ToAddressDto()).ToArray()
+                };
+        }
+
+        public static AddressDto ToAddressDto(this District entity)
+        {
+            return entity == null
+                ? null
+                : new AddressDto
+                {
+                    Id = entity.Id,
+                    Code = entity.DistrictCode,
+                    Name = entity.Name,
+                    Type = AddressType.District.ToString(),
+                    Childs = entity.Communes.Select(x => x.ToAddressDto()).ToArray()
+                };
+        }
+
+        public static AddressDto ToAddressDto(this Commune entity)
+        {
+            return entity == null
+                ? null
+                : new AddressDto
+                {
+                    Id = entity.Id,
+                    Code = entity.CommuneCode,
+                    Name = entity.Name,
+                    Type = AddressType.Ward.ToString(),
+                };
+        }
     }
 }

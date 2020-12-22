@@ -14,6 +14,8 @@ namespace Utilities.Enums
         VSTORAGE_ERROR,
         INVALID_FORMAT_FILE,
         INVALID_SIZE_FILE,
-        INVALID_STATUS
+        INVALID_STATUS,
+        USERNAME_EMAIL_EXIST,
+        GROUP_NAME_EXIST
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Services.Dtos.Common;
 using Services.Dtos.Common.InputDtos;
 using Services.Dtos.Response;
+using Services.Implementation.Common;
 using Services.Interfaces.Common;
 using Services.Interfaces.RedisCache;
 using Utilities.Constants;
@@ -18,15 +19,15 @@ namespace Source.Controllers
     public class ShrimpCropController : BaseApiController
     {
         #region Properties
-        private readonly IDataService _dataService;
+        private readonly IShrimpCropService _shrimpCropService;
         private readonly ICacheProvider _redisCache;
         #endregion
 
         #region Constructor
-        public ShrimpCropController(IDataService dataService, ICacheProvider cache)
+        public ShrimpCropController(IShrimpCropService shrimpCropService, ICacheProvider cache)
         {
             _redisCache = cache;
-            _dataService = dataService;
+            _shrimpCropService = shrimpCropService;
         }
         #endregion
 
@@ -44,7 +45,7 @@ namespace Source.Controllers
 
             if (result == null)
             {
-                result = await _dataService.GetAllShrimpCrop();
+                result = await _shrimpCropService.GetAllShrimpCrop();
                 _redisCache.Set(CacheConst.AllShrimpCrop, result, TimeSpan.FromHours(1));
             }
 
@@ -66,7 +67,7 @@ namespace Source.Controllers
         {
             var response = new BaseResponse<PageResultDto<ShrimpCropDto>>
             {
-                Data = await _dataService.FilterShrimpCrop(pageDto, searchKey, farmingLocationId, shrimpBreedId),
+                Data = await _shrimpCropService.FilterShrimpCrop(pageDto, searchKey, farmingLocationId, shrimpBreedId),
                 Status = true
             };
 
@@ -83,7 +84,7 @@ namespace Source.Controllers
 
             var response = new BaseResponse<ShrimpCropResultDto>
             {
-                Data = await _dataService.CreateShrimpCrop(dto),
+                Data = await _shrimpCropService.CreateShrimpCrop(dto),
                 Status = true
             };
 
@@ -100,7 +101,7 @@ namespace Source.Controllers
 
             var response = new BaseResponse<ShrimpCropResultDto>
             {
-                Data = await _dataService.GetShrimpCropById(id),
+                Data = await _shrimpCropService.GetShrimpCropById(id),
                 Status = true
             };
 
@@ -117,7 +118,7 @@ namespace Source.Controllers
 
             var response = new BaseResponse<Guid>
             {
-                Data = await _dataService.CreateOrUpdateShrimpCropManagementFactor(dto),
+                Data = await _shrimpCropService.CreateOrUpdateShrimpCropManagementFactor(dto),
                 Status = true
             };
 
@@ -134,7 +135,7 @@ namespace Source.Controllers
 
             var response = new BaseResponse<bool>
             {
-                Data = await _dataService.CancelShrimpCropManagementFactor(dto),
+                Data = await _shrimpCropService.CancelShrimpCropManagementFactor(dto),
                 Status = true
             };
 

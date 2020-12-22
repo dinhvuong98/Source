@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
+using Utilities.Enums;
 
 namespace Data.Entity.Account
 {
@@ -36,7 +37,7 @@ namespace Data.Entity.Account
         public DateTime? TokenExpiredTime { get; set; }
 
         [Column("status")]
-        public string Status { get; set; }
+        public string Status { get; set; } = AccountStatus.Active.ToString();
 
         [Column("created_by")]
         public Guid? CreatedBy { get; set; }

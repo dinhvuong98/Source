@@ -30,44 +30,7 @@ namespace Services.Implementation.Common
         }
 
         #region Public methods
-        public async Task<bool> StopWork(Guid shrimpCropManagementFactorId)
-        {
-            var works = await GetWorks(shrimpCropManagementFactorId);
-
-            using (IDbTransaction transaction = this.DatabaseConnectService.Connection.BeginTransaction())
-            {
-                try
-                {
-                    var shrimpCropManagementFactor = await GetShrimpCropManagementFactorById(shrimpCropManagementFactorId, transaction);
-
-                    shrimpCropManagementFactor.Status = CropFactorStatus.StopWork.ToString();
-
-                    await this.DatabaseConnectService.Connection.UpdateAsync<ShrimpCropManagementFactor>(shrimpCropManagementFactor, x => x.AttachToTransaction(transaction));
-
-                    if(works != null)
-                    {
-                        var query = @"UPDATE bys_main.bys_work SET status = @Status WHERE id IN @Ids ";
-
-                        var param = new
-                        {
-                            Status = StatusWork.Delete.ToString(),
-                            Ids = works.Select(x => x.Id).ToArray()
-                        };
-
-                        this.DatabaseConnectService.Connection.Execute(query.ToString(), param, transaction);
-
-                        transaction.Commit();
-                    }
-                    
-                    return true;
-                }
-                catch (Exception e)
-                {
-                    transaction.Rollback();
-                    throw new BusinessException(e.Message, ErrorCode.INVALID_PARAMETER);
-                }
-            }
-        }
+        
 
         public async Task<PageResultDto<WorkDto>> FilterWork(PageDto pageDto, FilterParamWorkDto filterParamWorkDto)
         {
@@ -147,6 +110,45 @@ namespace Services.Implementation.Common
             return result;
         }
 
+        public async Task<bool> StopWork(Guid shrimpCropManagementFactorId)
+        {
+            var works = await GetWorks(shrimpCropManagementFactorId);
+
+            using (IDbTransaction transaction = this.DatabaseConnectService.Connection.BeginTransaction())
+            {
+                try
+                {
+                    var shrimpCropManagementFactor = await GetShrimpCropManagementFactorById(shrimpCropManagementFactorId, transaction);
+
+                    shrimpCropManagementFactor.Status = CropFactorStatus.StopWork.ToString();
+
+                    await this.DatabaseConnectService.Connection.UpdateAsync<ShrimpCropManagementFactor>(shrimpCropManagementFactor, x => x.AttachToTransaction(transaction));
+
+                    if (works != null)
+                    {
+                        var query = @"UPDATE bys_main.bys_work SET status = @Status WHERE id IN @Ids ";
+
+                        var param = new
+                        {
+                            Status = StatusWork.Delete.ToString(),
+                            Ids = works.Select(x => x.Id).ToArray()
+                        };
+
+                        this.DatabaseConnectService.Connection.Execute(query.ToString(), param, transaction);
+
+                        transaction.Commit();
+                    }
+
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    transaction.Rollback();
+                    throw new BusinessException(e.Message, ErrorCode.INTERNAL_SERVER_ERROR);
+                }
+            }
+        }
+
         public async Task<RecordResultDto> RecordWord(RecordDto dto)
         {
             ValidateRecordWork(dto);
@@ -166,6 +168,40 @@ namespace Services.Implementation.Common
                 result = true,
                 ModifiedAt = dto.ModifiedAt
             };
+        }
+
+        public async Task<bool> UpdatePicture(UpdateWorkPictureDto dto)
+        {
+            var count = await this.DatabaseConnectService.Connection.CountAsync<WorkPicture>(x => x
+                        .Where($"bys_work_picture.work_id = @WorkId")
+                        .WithParameters(new { WorkId = dto.WorkId }));
+
+            if (dto.Pictures.Length + count > 3 || dto.WorkId == null)
+            {
+                throw new BusinessException("", ErrorCode.INVALID_PARAMETER);
+            }
+
+            using (IDbTransaction transaction = this.DatabaseConnectService.BeginTransaction())
+            {
+                try
+                {
+                    foreach (TempUploadFileDto temp in dto.Pictures)
+                    {
+                        WorkPicture workPicture = temp.ToWorkPicture();
+                        workPicture.WorkId = dto.WorkId;
+
+                        await this.DatabaseConnectService.Connection.InsertAsync<WorkPicture>(workPicture, x => x.AttachToTransaction(transaction));
+                    }
+
+                    transaction.Commit();
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    transaction.Rollback();
+                    throw new BusinessException(e.Message, ErrorCode.INVALID_PARAMETER);
+                }
+            }
         }
 
         #endregion
@@ -218,40 +254,6 @@ namespace Services.Implementation.Common
             if (!check || dto.WorkId == null)
             {
                 throw new BusinessException("Invalid parameter!", ErrorCode.INVALID_PARAMETER);
-            }
-        }
-
-        public async Task<bool> UpdatePicture(UpdateWorkPictureDto dto)
-        {
-            var count = await this.DatabaseConnectService.Connection.CountAsync<WorkPicture>(x => x
-                        .Where($"bys_work_picture.work_id = @WorkId")
-                        .WithParameters(new { WorkId = dto.WorkId }));
-
-            if (dto.Pictures.Length + count > 3 || dto.WorkId == null)
-            {
-                throw new BusinessException("", ErrorCode.INVALID_PARAMETER);
-            }
-
-            using (IDbTransaction transaction = this.DatabaseConnectService.BeginTransaction())
-            {
-                try
-                {
-                    foreach (TempUploadFileDto temp in dto.Pictures)
-                    {
-                        WorkPicture workPicture = temp.ToWorkPicture();
-                        workPicture.WorkId = dto.WorkId;
-
-                        await this.DatabaseConnectService.Connection.InsertAsync<WorkPicture>(workPicture, x => x.AttachToTransaction(transaction));
-                    }
-
-                    transaction.Commit();
-                    return true;
-                }
-                catch (Exception e)
-                {
-                    transaction.Rollback();
-                    throw new BusinessException(e.Message, ErrorCode.INVALID_PARAMETER);
-                }
             }
         }
         #endregion

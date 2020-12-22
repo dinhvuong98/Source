@@ -11,7 +11,18 @@ using Utilities.Enums;
 using Utilities.Exceptions;
 using Services.Interfaces.Internal;
 using System;
-using Services.Dtos.Accounts.InputDto;
+using Services.Dtos.Common.InputDtos;
+using Microsoft.Extensions.Logging;
+using System.Text;
+using Services.Dtos.Common;
+using Utilities.Common;
+using Quartz.Util;
+using System.Data;
+using Data.Entity.Common;
+using Services.Implementation.Common.Helpers;
+using Dapper;
+using Services.Interfaces.RedisCache;
+using Utilities.Constants;
 
 namespace Services.Implementation.Account
 {
@@ -20,13 +31,17 @@ namespace Services.Implementation.Account
         #region Properties
         private readonly ITokenService _tokenService;
         private readonly ISessionService _sessionService;
+        private readonly ICacheProvider _redisCache;
+        private readonly ILogger<UserService> _logger;
         #endregion
 
         #region Constructor
-        public UserService(DatabaseConnectService databaseConnectService, ITokenService tokenService, ISessionService sessionService): base(databaseConnectService)
+        public UserService(DatabaseConnectService databaseConnectService, ITokenService tokenService, ISessionService sessionService, ICacheProvider redisCache, ILogger<UserService> logger) : base(databaseConnectService)
         {
             _tokenService = tokenService;
             _sessionService = sessionService;
+            _redisCache = redisCache;
+            _logger = logger;
             DatabaseConnectService = databaseConnectService;
         }
         #endregion
@@ -37,13 +52,13 @@ namespace Services.Implementation.Account
             var user = (await this.DatabaseConnectService.Connection.FindAsync<User>(x => x
                         .Include<Data.Entity.Account.Account>(join => join.LeftOuterJoin())
                         .Where($"bys_account.username = @UserName")
-                        .WithParameters(new { UserName = loginDto.UserName}))).FirstOrDefault();
+                        .WithParameters(new { UserName = loginDto.UserName }))).FirstOrDefault();
 
-            if(user != null)
+            if (user != null)
             {
-                if(user.Account.FirstOrDefault().Password == loginDto.Password)
+                if (user.Accounts.FirstOrDefault().Password == loginDto.Password)
                 {
-                    if(user.Status == AccountStatus.Active.ToString())
+                    if (user.Status == AccountStatus.Active.ToString())
                     {
                         var result = user.ToLoginResultDto();
                         result.JwtToken = _tokenService.GenerateJwtToken(user.ToAccountDto());
@@ -77,7 +92,7 @@ namespace Services.Implementation.Account
 
                             return true;
                         }
-                        throw new BusinessException("Mật khẩu này đang được sử dụng", ErrorCode.WRONG_PASSWORD);
+                        throw new BusinessException("Mật khẩu này đang được sử dụng", ErrorCode.FAIL);
                     }
                     throw new BusinessException("Mật khẩu cũ không đúng", ErrorCode.WRONG_PASSWORD);
                 }
@@ -116,7 +131,426 @@ namespace Services.Implementation.Account
             return true;
         }
 
-        
+        public async Task<PageResultDto<DetailUserResultDto>> FilterUser(PageDto pageDto, string searchKey, string groupId)
+        {
+            _logger.LogInformation("start method filter user");
+
+            var query = new StringBuilder();
+
+            query.Append("@SearchKey is null OR (bys_account.username LIKE @SearchKey OR bys_user.fullname LIKE @SearchKey OR bys_user.email LIKE @SearchKey) ");
+            query.Append("AND (@GroupId is null OR (bys_users_groups.group_id = @GroupId)) ");
+            query.Append("AND bys_user.status = @Status");
+
+            var param = new
+            {
+                SearchKey = searchKey.FormatSearch(),
+                GroupId = groupId,
+                Status = AccountStatus.Active.ToString()
+            };
+
+            var count = (await this.DatabaseConnectService.Connection.FindAsync<User>(x => x
+                         .Include<Data.Entity.Account.Account>(j => j.InnerJoin())
+                         .Include<UserGroup>(j => j.LeftOuterJoin())
+                         .Where($"{query}")
+                         .WithParameters(param))).Distinct().Count();
+
+            var items = (await this.DatabaseConnectService.Connection.FindAsync<User>(x => x
+                         .Include<Data.Entity.Account.Account>(j => j.InnerJoin())
+                         .Include<UserGroup>(j => j.LeftOuterJoin())
+                         .Include<Group>(j => j.LeftOuterJoin())
+                         .Where($"{query}")
+                         .WithParameters(param)))
+                         .OrderByDescending(x => x.CreatedAt)
+                         .Skip(pageDto.Page * pageDto.PageSize)
+                         .Take(pageDto.PageSize)
+                         .Select(x => x.ToDetailUserDto()).ToArray();
+
+            var result = new PageResultDto<DetailUserResultDto>
+            {
+                Items = items,
+                TotalCount = count,
+                PageIndex = pageDto.Page,
+                PageSize = pageDto.PageSize,
+                TotalPages = (int)Math.Ceiling(count / (double)pageDto.PageSize),
+            };
+
+            _logger.LogInformation("end method filter user");
+
+            return result;
+        }
+
+        public async Task<GroupDto[]> GetAllGroup()
+        {
+            _logger.LogInformation("start method get all group");
+
+            var param = new
+            {
+                GroupStatus = EntityStatus.Alive.ToString(),
+            };
+
+            var result = (await this.DatabaseConnectService.Connection.FindAsync<Group>(x => x
+                        .Include<UserGroup>(j => j.LeftOuterJoin())
+                        .Where($"bys_group.status = @GroupStatus")
+                        .WithParameters(param)))
+                        .Select(x => x.ToGroupDto()).ToArray();
+
+            _logger.LogInformation("end method get all group");
+
+            return result;
+        }
+
+        public async Task<PageResultDto<GroupDto>> FilterGroup(PageDto pageDto, string searchKey)
+        {
+            _logger.LogInformation("start method filter group");
+
+            var query = new StringBuilder();
+            query.Append("@SearchKey is null or (bys_group.name LIKE @SearchKey) AND bys_group.status = @GroupStatus");
+
+            var param = new
+            {
+                SearchKey = searchKey.FormatSearch(),
+                GroupStatus = EntityStatus.Alive.ToString(),
+            };
+
+            var count = await this.DatabaseConnectService.Connection.CountAsync<Group>(x => x
+                        .Where($"{query}")
+                        .WithParameters(param));
+
+            var items = (await this.DatabaseConnectService.Connection.FindAsync<Group>(x => x
+                        .Include<GroupFeature>(j => j.LeftOuterJoin())
+                        .Include<UserGroup>(j => j.LeftOuterJoin())
+                        .Where($"{query}")
+                        .WithParameters(param)))
+                        .Skip(pageDto.Page * pageDto.PageSize)
+                        .Take(pageDto.PageSize)
+                        .Select(x => x.ToGroupDto()).ToArray();
+
+            var result = new PageResultDto<GroupDto>
+            {
+                Items = items,
+                TotalCount = count,
+                PageIndex = pageDto.Page,
+                PageSize = pageDto.PageSize,
+                TotalPages = (int)Math.Ceiling(count / (double)pageDto.PageSize),
+            };
+
+            _logger.LogInformation("end method filter group");
+
+            return result;
+        }
+
+        public async Task<GroupDto> GetGroupById(Guid id)
+        {
+            _logger.LogInformation("start method get group by id");
+
+            var result = (await this.DatabaseConnectService.Connection.FindAsync<Group>(x => x
+                            .Where($"bys_group.id = @Id")
+                            .WithParameters(new { Id = id }))).Select(x => x.ToGroupDto()).FirstOrDefault();
+
+            _logger.LogInformation("end method get group by id");
+            return result;
+        }
+
+        public async Task<FeatureDto[]> GetAllFeature()
+        {
+            _logger.LogInformation("start method get all feature");
+
+            var result = (await this.DatabaseConnectService.Connection.FindAsync<Feature>(x => x
+                            .Where($"bys_feature.status = @Status")
+                            .WithParameters(new { Status = EntityStatus.Alive.ToString() })))
+                            .Select(x => x.ToFeatureDto()).ToArray();
+
+            _logger.LogInformation("end method get all feature");
+
+            return result;
+        }
+
+        public async Task<GroupDto> CreateGroup(CreateGroupDto dto)
+        {
+            await ValidateCreateGroup(dto);
+
+            var now = DateTime.UtcNow;
+            var createdBy = _sessionService.UserId;
+
+            using (IDbTransaction trans = this.DatabaseConnectService.Connection.BeginTransaction())
+            {
+                try
+                {
+                    var group = dto.ToGroup();
+                    group.CreatedAt = now;
+                    group.CreatedBy = createdBy;
+
+                    await this.DatabaseConnectService.Connection.InsertAsync<Group>(group, x => x.AttachToTransaction(trans));
+
+                    if (dto.Features.Length > 0)
+                    {
+                        foreach (var item in dto.Features)
+                        {
+                            var groupFeature = new GroupFeature
+                            {
+                                FeatureId = item.Id,
+                                GroupId = group.Id,
+                                CreatedAt = now,
+                                ModifiedAt = now
+                            };
+
+                            await this.DatabaseConnectService.Connection.InsertAsync<GroupFeature>(groupFeature, x => x.AttachToTransaction(trans));
+                        }
+                    }
+
+                    trans.Commit();
+
+                    _redisCache.Remove(CacheConst.AllGroup);
+
+                    //return await GetGroupById(group.Id);
+
+                    return null;
+                }
+                catch (Exception e)
+                {
+                    trans.Rollback();
+                    throw new BusinessException(e.Message, ErrorCode.INTERNAL_SERVER_ERROR);
+                }
+            }
+        }
+
+        public async Task<DetailUserResultDto> GetDetailUserById(Guid id)
+        {
+            _logger.LogInformation("start method get detail by id");
+
+            var user = (await this.DatabaseConnectService.Connection.FindAsync<User>(x => x
+                        .Include<Data.Entity.Account.Account>(j => j.InnerJoin())
+                        .Include<UserGroup>(j => j.LeftOuterJoin())
+                        .Include<Group>(j => j.LeftOuterJoin())
+                        .Where($"bys_user.id = @UserId")
+                        .WithParameters(new { UserId = id }))).FirstOrDefault();
+
+            if (user == null) return null;
+
+            var result = user.ToDetailUserDto();
+
+            if (user.ProvinceId.HasValue)
+            {
+                result.Province = (await this.DatabaseConnectService.Connection.FindAsync<Province>(x => x
+                                    .Where($"bys_province.id = @ProvinecId")
+                                    .WithParameters(new { ProvinecId = user.ProvinceId }))).FirstOrDefault().ToDictionaryItemDto();
+            }
+
+            if (user.DistrictId.HasValue)
+            {
+                result.District = (await this.DatabaseConnectService.Connection.FindAsync<District>(x => x
+                                    .Where($"bys_district.id = @DistrictId")
+                                    .WithParameters(new { DistrictId = user.DistrictId }))).FirstOrDefault().ToDictionaryItemDto();
+            }
+
+            if (user.CommuneId.HasValue)
+            {
+                result.Commune = (await this.DatabaseConnectService.Connection.FindAsync<Commune>(x => x
+                                    .Where($"bys_commune.id = @CommuneId")
+                                    .WithParameters(new { CommuneId = user.CommuneId }))).FirstOrDefault().ToDictionaryItemDto();
+            }
+
+            _logger.LogInformation("end method get detail user by id");
+
+            return result;
+        }
+
+        public async Task<DetailUserResultDto> CreateOrUpdateUser(CreateOrUpdateUserDto dto)
+        {
+            ValidateCreateOrUpDateUser(dto);
+
+            var checkAccount = new CheckAccountDto
+            {
+                UserName = dto.Id == null ? dto.UserName : null,
+                Email = dto.Email
+            };
+
+            await CheckAccount(checkAccount);
+
+            var now = DateTime.UtcNow;
+
+            using (IDbTransaction trans = this.DatabaseConnectService.Connection.BeginTransaction())
+            {
+                try
+                {
+                    if (dto.Id == null)
+                    {
+                        var user = dto.ToUser();
+                        user.CreatedAt = now;
+                        user.CreatedBy = _sessionService.UserId;
+                        await this.DatabaseConnectService.Connection.InsertAsync<User>(user, x => x.AttachToTransaction(trans));
+
+                        var account = dto.ToAccount();
+                        account.CreatedAt = now;
+                        account.CreatedBy = _sessionService.UserId;
+                        account.UserId = user.Id;
+                        await this.DatabaseConnectService.Connection.InsertAsync<Data.Entity.Account.Account>(account, x => x.AttachToTransaction(trans));
+
+                        if (dto.Group != null)
+                        {
+                            var userGroup = dto.Group.ToUserGroup();
+                            userGroup.UserId = user.Id;
+                            userGroup.CreatedAt = now;
+
+                            await this.DatabaseConnectService.Connection.InsertAsync<UserGroup>(userGroup, x => x.AttachToTransaction(trans));
+                        }
+                        dto.Id = user.Id;
+                    }
+                    else
+                    {
+                        var user = (await this.DatabaseConnectService.Connection.FindAsync<User>(x => x
+                                    .AttachToTransaction(trans)
+                                    .Include<UserGroup>(join => join.LeftOuterJoin())
+                                    .Where($"bys_user.id = @UserId")
+                                    .WithParameters(new { UserId = dto.Id }))).FirstOrDefault();
+
+                        var userGroupAlive = user.UserGroups.Where(x => x.Status == EntityStatus.Alive.ToString()).FirstOrDefault();
+
+                        var userInsert = dto.ToUser();
+                        userInsert.ModifiedAt = now;
+                        userInsert.UpdateBy = _sessionService.UserId;
+                        userInsert.CreatedAt = user.CreatedAt;
+                        userInsert.CreatedBy = user.CreatedBy;
+
+                        await this.DatabaseConnectService.Connection.UpdateAsync<User>(userInsert, x => x.AttachToTransaction(trans));
+
+                        if (dto.Group != null)
+                        {
+                            var userGroupInsert = dto.Group.ToUserGroup();
+                            userGroupInsert.UserId = user.Id;
+                            userGroupInsert.CreatedAt = now;
+                            await this.DatabaseConnectService.Connection.InsertAsync<UserGroup>(userGroupInsert, x => x.AttachToTransaction(trans));
+
+                            if (userGroupAlive != null)
+                            {
+                                userGroupAlive.Status = EntityStatus.Delete.ToString();
+                                await this.DatabaseConnectService.Connection.UpdateAsync<UserGroup>(userGroupAlive, x => x.AttachToTransaction(trans));
+                            }
+                        }
+                    }
+
+                    trans.Commit();
+
+                    _redisCache.Remove(CacheConst.AllUser);
+
+                    return await GetDetailUserById((Guid)dto.Id);
+                }
+                catch (Exception e)
+                {
+                    trans.Rollback();
+                    throw new BusinessException(e.Message, ErrorCode.INTERNAL_SERVER_ERROR);
+                }
+            }
+        }
+
+        public async Task<bool> CheckAccount(CheckAccountDto dto)
+        {
+            var query = new StringBuilder();
+
+            query.Append("bys_user.email = @Email");
+            if (dto.UserName != null)
+            {
+                query.Append(" OR bys_account.username = @UserName");
+            }
+
+            var param = new
+            {
+                UserName = dto.UserName,
+                Email = dto.Email
+            };
+
+            var user = (await this.DatabaseConnectService.Connection.FindAsync<User>(x => x
+                        .Include<Data.Entity.Account.Account>(j => j.LeftOuterJoin())
+                        .Where($"{query}")
+                        .WithParameters(param))).FirstOrDefault();
+
+            return user != null ? (user.Email == dto.Email ? true : throw new BusinessException("Username or email exists", ErrorCode.USERNAME_EMAIL_EXIST)) : true;
+        }
+
+        public async Task<bool> DeleteUser(Guid[] ids)
+        {
+            ValidateDeleteUser(ids);
+
+            var query = new StringBuilder();
+            query.Append("UPDATE bys_user SET status = @Status WHERE id IN @Ids");
+
+            var param = new
+            {
+                Status = AccountStatus.Delete.ToString(),
+                Ids = ids
+            };
+
+            var trans = this.DatabaseConnectService.Connection.BeginTransaction();
+
+            try
+            {
+                await this.DatabaseConnectService.Connection.ExecuteAsync(query.ToString(), param, trans);
+
+                trans.Commit();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                trans.Rollback();
+                throw new BusinessException(e.Message, ErrorCode.INTERNAL_SERVER_ERROR);
+            }
+        }
+
+        #endregion
+
+        #region Private methods
+
+        private void ValidateCreateOrUpDateUser(CreateOrUpdateUserDto dto)
+        {
+            if ((dto.Id == null && dto.Password.IsNullOrWhiteSpace())
+                || dto.UserName.IsNullOrWhiteSpace()
+                || dto.FullName.IsNullOrWhiteSpace()
+                || dto.Email.IsNullOrWhiteSpace()
+                )
+            {
+                throw new BusinessException("Invalid parameter!", ErrorCode.INVALID_PARAMETER);
+            }
+        }
+
+        private async Task ValidateCreateGroup(CreateGroupDto dto)
+        {
+            if (dto.Name.IsNullOrWhiteSpace() || dto.Description.IsNullOrWhiteSpace())
+            {
+                throw new BusinessException("Invalid parameter!", ErrorCode.INVALID_PARAMETER);
+            }
+
+            var validateGroupName = (await this.DatabaseConnectService.Connection.FindAsync<Group>(x => x
+                                    .Where($" bys_group.name = @GroupName ")
+                                    .WithParameters(new { GroupName = dto.Name }))).FirstOrDefault();
+
+            if (validateGroupName != null)
+                throw new BusinessException("Group name already exists", ErrorCode.GROUP_NAME_EXIST);
+        }
+
+        private void ValidateDeleteUser(Guid[] ids)
+        {
+            foreach (var item in ids)
+            {
+                if (item == null)
+                {
+                    break;
+                    throw new BusinessException("Invalid parameter!", ErrorCode.INVALID_PARAMETER);
+                }
+            }
+        }
+
+        private bool CheckUserGroup(Guid groupId, UserGroup[] userGroup)
+        {
+            foreach (var item in userGroup)
+            {
+                if(item.GroupId == groupId)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
         #endregion
     }
 }

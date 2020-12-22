@@ -2,9 +2,11 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Services.Dtos.Account;
 using Services.Dtos.Common;
 using Services.Dtos.Common.InputDtos;
 using Services.Dtos.Response;
+using Services.Interfaces.Account;
 using Services.Interfaces.Common;
 using Services.Interfaces.RedisCache;
 using Utilities.Constants;
@@ -18,20 +20,22 @@ namespace Source.Controllers
     {
         #region Properties
         private readonly IDataService _dataService;
+        private readonly IUserService _userService;
         private readonly ICacheProvider _redisCache;
         #endregion
 
         #region Constructor
-        public MasterDataController(IDataService dataService, ICacheProvider redisCache)
+        public MasterDataController(IDataService dataService, IUserService userService, ICacheProvider redisCache)
         {
             _dataService = dataService;
+            _userService = userService;
             _redisCache = redisCache;
         }
         #endregion
 
         #region public methods
         [HttpGet("filter-area/{page}/{pageSize}")]
-        public async Task<BaseResponse<PageResultDto<AreaDto>>> FilterAreas([FromRoute] PageDto pageDto,[FromQuery] string searchKey)
+        public async Task<BaseResponse<PageResultDto<AreaDto>>> FilterAreas([FromRoute] PageDto pageDto, [FromQuery] string searchKey)
         {
             var response = new BaseResponse<PageResultDto<AreaDto>>
             {
@@ -118,7 +122,7 @@ namespace Source.Controllers
                 Status = false
             };
 
-            if(result == null)
+            if (result == null)
             {
                 result = await _dataService.GetMasterData(groupsName);
                 _redisCache.Set(groupsName, result, TimeSpan.FromHours(1));
@@ -137,6 +141,63 @@ namespace Source.Controllers
             return await Task.FromResult(response);
         }
 
+        [HttpGet("addressmasterdata")]
+        public async Task<BaseResponse<AddressDto[]>> GetAddressMasterData()
+        {
+            var result = _redisCache.GetByKey<AddressDto[]>(CacheConst.AddressMasterData);
+
+            var response = new BaseResponse<AddressDto[]>
+            {
+                Status = false
+            };
+
+            if (result == null)
+            {
+                result = await _dataService.GetAddressMasterData();
+                _redisCache.Set(CacheConst.AddressMasterData, result, TimeSpan.FromHours(1));
+            }
+
+            if (result.Length > 0)
+            {
+                response.Data = result;
+                response.Status = true;
+            }
+            else
+            {
+                response.Error = new Error("Get data not success!", ErrorCode.GET_DATA_NOT_SUCCESS);
+            }
+
+            return await Task.FromResult(response);
+        }
+
+        [HttpGet("feature")]
+        public async Task<BaseResponse<FeatureDto[]>> GetAllFeature()
+        {
+            var result = _redisCache.GetByKey<FeatureDto[]>(CacheConst.AllFeature);
+
+            var response = new BaseResponse<FeatureDto[]>
+            {
+                Status = false
+            };
+
+            if (result == null)
+            {
+                result = await _userService.GetAllFeature();
+                _redisCache.Set(CacheConst.AllFeature, result, TimeSpan.FromHours(1));
+            }
+
+            if(result.Length > 0)
+            {
+                response.Data = result;
+                response.Status = true;
+            }
+            else
+            {
+                response.Error = new Error("Get data not success!", ErrorCode.GET_DATA_NOT_SUCCESS);
+            }
+
+            return await Task.FromResult(response);
+        }
         #endregion
     }
 }

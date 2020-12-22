@@ -7,7 +7,8 @@ namespace Utilities.Enums
     public  enum EntityStatus
     {
         Alive,
-        NotAlive
+        NotAlive,
+        Delete
     }
 
     public enum StatusWork

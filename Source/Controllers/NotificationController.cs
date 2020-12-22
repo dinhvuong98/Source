@@ -38,28 +38,29 @@ namespace Source.Controllers
         }
 
         [HttpPatch("{id}/mark-as-read")]
-        public async Task<BaseResponse<bool>> MarkAsRead([FromRoute] string id)
+        public async Task<BaseResponse<bool>> MarkAsReadNotification([FromRoute] string id)
         {
             var response = new BaseResponse<bool>
             {
-                Data = await _notificationService.MaskAsReadNotification(id),
+                Data = await _notificationService.MarkAsReadNotification(id),
                 Status = true
             };
 
             return await Task.FromResult(response);
         }
 
-        [HttpGet("remind")]
-        public async Task<BaseResponse<bool>> CreateRemind()
+        [HttpPatch("mark-all-as-read")]
+        public async Task<BaseResponse<bool>> MarkAllAsReadNotification([FromBody] long Timestamp)
         {
             var response = new BaseResponse<bool>
             {
-                Data = await _notificationService.CreateRemind(),
+                Data = await _notificationService.MarkAllAsReadNotification(Timestamp),
                 Status = true
             };
 
             return await Task.FromResult(response);
         }
+
 
         #endregion
     }

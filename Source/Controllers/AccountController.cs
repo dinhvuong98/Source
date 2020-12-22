@@ -7,6 +7,8 @@ using Services.Dtos.Account.InputDtos;
 using Services.Interfaces.Account;
 using Quartz.Util;
 using Services.Dtos.Response;
+using Utilities.Exceptions;
+using Utilities.Enums;
 
 namespace Source.Controllers
 {
@@ -45,6 +47,27 @@ namespace Source.Controllers
 
             return await Task.FromResult(response);
         }
+
+        [HttpPost("account/change-password")]
+        public async Task<BaseResponse<bool>> ChangePassword([FromBody] ChangePassDto dto)
+        {
+            if (dto == null
+                || dto.AccountId == null
+                || dto.OldPassword.IsNullOrWhiteSpace()
+                || dto.NewPassword.IsNullOrWhiteSpace())
+            {
+                throw new BusinessException("Invalid parameter!", ErrorCode.INVALID_PARAMETER);
+            }
+
+            var response = new BaseResponse<bool>
+            {
+                Data = await _userService.ChangePassword(dto),
+                Status = true
+            };
+
+            return await Task.FromResult(response);
+        }
+
         #endregion
     }
 }

@@ -13,9 +13,6 @@ namespace Services.Implementation.Internal
 {
     public class FileSystemStorageProvider : IStorageProvider
     {
-        //private readonly FileStorageConfig _config;
-      
-
         private readonly string _defaultDocumentFolder = SingletonDependency<IOptions<FileStorageConfig>>.Instance.Value.ImageAbsolutePhysicalPath;
         private readonly string _defaultAvatarFolder = SingletonDependency<IOptions<FileStorageConfig>>.Instance.Value.ImageAbsolutePhysicalPath;
         private readonly string _folderUploadLarge = SingletonDependency<IOptions<FileStorageConfig>>.Instance.Value.LargeImageAbsolutePhysicalPath;

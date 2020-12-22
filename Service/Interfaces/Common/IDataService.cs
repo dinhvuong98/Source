@@ -23,16 +23,8 @@ namespace Services.Interfaces.Common
 
         Task<PageResultDto<ManagementFactorDto>> FilterManagementFactor(PageDto pageDto, string search, string dataType, string FactorGroup);
 
-        Task<ShrimpCropDto[]> GetAllShrimpCrop();
+        
 
-        Task<PageResultDto<ShrimpCropDto>> FilterShrimpCrop(PageDto pageDto, string searchKey, string farmingLocationId, string shrimpBreedId);
-
-        Task<ShrimpCropResultDto> CreateShrimpCrop(CreateShrimpCropDto createShrimpCropDto);
-
-        Task<ShrimpCropResultDto> GetShrimpCropById(Guid id);
-
-        Task<Guid> CreateOrUpdateShrimpCropManagementFactor(CreateShrimpCropManagementFactorDto dto);
-
-        Task<bool> CancelShrimpCropManagementFactor(CancelShrimpCropManagementFactorDto dto);
+        Task<AddressDto[]> GetAddressMasterData();
     }
 }

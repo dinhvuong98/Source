@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Services.Dtos.Accounts.InputDto
+namespace Services.Dtos.Account.InputDtos
 {
     [Serializable]
     public class ChangePassDto

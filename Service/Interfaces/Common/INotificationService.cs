@@ -8,7 +8,9 @@ namespace Services.Interfaces.Common
     {
         Task<PageResultDto<NotificationDto>> FilterNotification(PageDto pageDto);
 
-        Task<bool> MaskAsReadNotification(string id);
+        Task<bool> MarkAsReadNotification(string id);
+
+        Task<bool> MarkAllAsReadNotification(long timestamp);
 
         Task<bool> CreateRemind();
     }

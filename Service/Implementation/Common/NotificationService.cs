@@ -114,7 +114,7 @@ namespace Services.Implementation.Common
             return result;
         }
 
-        public async Task<bool> MaskAsReadNotification(string id)
+        public async Task<bool> MarkAsReadNotification(string id)
         {
             var notification = (await this.DatabaseConnectService.Connection.FindAsync<Notification>(x => x
                             .Where($"bys_notification.id = @Id")
@@ -132,7 +132,7 @@ namespace Services.Implementation.Common
             return true;
         }
 
-        public async Task<bool> MaskAllAsRead(long Timestamp)
+        public async Task<bool> MarkAllAsReadNotification(long timestamp)
         {
             var queryUnread = new StringBuilder();
             queryUnread.Append("bys_notification.user_id = @UserId AND bys_shrimp_crop_management_factor.status != @CropFactorStatus AND bys_notification.status = @Status ");
@@ -148,6 +148,11 @@ namespace Services.Implementation.Common
                                 .Include<ShrimpCropManagementFactor>(j => j.LeftOuterJoin())
                                 .Where($"{queryUnread}")
                                 .WithParameters(paramUnread));
+
+            if (notifyUnread == null)
+            {
+                return false;
+            }
 
             var queryUpdate = new StringBuilder();
             queryUpdate.Append("UPDATE bys_main.bys_notification SET status = @Status Where id IN @Ids");
@@ -215,6 +220,7 @@ namespace Services.Implementation.Common
 
             return result;
         }
+
         #endregion
     }
 }

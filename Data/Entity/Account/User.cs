@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
+using Utilities.Enums;
 
 namespace Data.Entity.Account
 {
@@ -27,8 +26,8 @@ namespace Data.Entity.Account
         public string Avatar { get; set; }
 
         [Column("status")]
-        public string Status { get; set; }
-
+        public string Status { get; set; } = AccountStatus.Active.ToString();
+         
         [Column("last_time_read_notification")]
         public DateTime? LastTimeReadNotification { get; set; }
 
@@ -57,6 +56,9 @@ namespace Data.Entity.Account
         public Guid? UpdateBy { get; set; }
 
         [InverseProperty("User")]
-        public ICollection<Account> Account { get; set; }
+        public ICollection<Account> Accounts { get; set; }
+
+        [InverseProperty("User")]
+        public ICollection<UserGroup> UserGroups { get; set; }
     }
 }

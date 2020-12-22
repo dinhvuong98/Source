@@ -20,5 +20,53 @@ namespace Services.Implementation.Common.Helpers
 
             return dto;
         }
+
+        public static DictionaryItemDto ToDictionaryItemDto(this Country entity)
+        {
+            return entity == null
+                ? null
+                : new DictionaryItemDto
+                {
+                    Key = entity.Id.ToString(),
+                    Code = entity.CountryCode,
+                    Value = entity.Name
+                };
+        }
+
+        public static DictionaryItemDto ToDictionaryItemDto(this Province entity)
+        {
+            return entity == null
+                ? null
+                : new DictionaryItemDto
+                {
+                    Key = entity.Id.ToString(),
+                    Code = entity.ProvinceCode,
+                    Value = entity.Name
+                };
+        }
+
+        public static DictionaryItemDto ToDictionaryItemDto(this District entity)
+        {
+            return entity == null
+                ? null
+                : new DictionaryItemDto
+                {
+                    Key = entity.Id.ToString(),
+                    Code = entity.DistrictCode,
+                    Value = entity.Name
+                };
+        }
+
+        public static DictionaryItemDto ToDictionaryItemDto(this Commune entity)
+        {
+            return entity == null
+                ? null
+                : new DictionaryItemDto
+                {
+                    Key = entity.Id.ToString(),
+                    Code = entity.CommuneCode,
+                    Value = entity.Name
+                };
+        }
     }
 }

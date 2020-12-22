@@ -33,6 +33,7 @@ namespace Source.App_Start
             services.AddTransient<ICacheProvider, RedisCacheProvider>();
             services.AddTransient<IWorkService, WorkService>();
             services.AddTransient<IFileService, FileService>();
+            services.AddTransient<IShrimpCropService, ShrimpCropService>();
 
             Mapper.Initialize(cfg => cfg.AddProfile<DtoMappingProfile>());
         }
