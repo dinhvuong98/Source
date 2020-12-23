@@ -20,15 +20,15 @@ namespace Source.Controllers
     public class GroupController : BaseApiController
     {
         #region Properties
-        private readonly IUserService _userService;
+        private readonly IGroupService _groupService;
         private readonly ICacheProvider _redisCache;
         #endregion
 
         #region Constructor 
-        public GroupController(IUserService userService, ICacheProvider redisCache)
+        public GroupController(IGroupService groupService, ICacheProvider redisCache)
         {
             _redisCache = redisCache;
-            _userService = userService;
+            _groupService = groupService;
         }
 
         #endregion
@@ -40,7 +40,7 @@ namespace Source.Controllers
         {
             var response = new BaseResponse<PageResultDto<GroupDto>>
             {
-                Data = await _userService.FilterGroup(pageDto, searchKey),
+                Data = await _groupService.FilterGroup(pageDto, searchKey),
                 Status = true
             };
 
@@ -59,7 +59,7 @@ namespace Source.Controllers
 
             if (result == null)
             {
-                result = await _userService.GetAllGroup();
+                result = await _groupService.GetAllGroup();
                 _redisCache.Set(CacheConst.AllGroup, result, TimeSpan.FromHours(1));
             }
 
@@ -81,7 +81,7 @@ namespace Source.Controllers
         {
             var response = new BaseResponse<GroupDto>
             {
-                Data = await _userService.GetGroupById(groupId),
+                Data = await _groupService.GetGroupById(groupId),
                 Status = true
             };
 
@@ -98,7 +98,7 @@ namespace Source.Controllers
 
             var response = new BaseResponse<GroupDto>
             {
-                Data = await _userService.CreateGroup(dto),
+                Data = await _groupService.CreateGroup(dto),
                 Status = true
             };
 

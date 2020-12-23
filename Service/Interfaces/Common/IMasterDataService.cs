@@ -1,11 +1,11 @@
 ﻿using Services.Dtos.Common.InputDtos;
 using Services.Dtos.Common;
-using System;
 using System.Threading.Tasks;
+using Services.Dtos.Account;
 
 namespace Services.Interfaces.Common
 {
-    public interface IDataService
+    public interface IMasterDataService
     {
         Task<PageResultDto<AreaDto>> FilterAreas(PageDto pageDto, string searchKey);
 
@@ -19,11 +19,7 @@ namespace Services.Interfaces.Common
 
         Task<MasterDataResultDto[]> GetMasterData(string groupsName);
 
-        Task<ShortManagementFactorDto[]> GetAllManagementFactor();
-
-        Task<PageResultDto<ManagementFactorDto>> FilterManagementFactor(PageDto pageDto, string search, string dataType, string FactorGroup);
-
-        
+        Task<FeatureDto[]> GetAllFeature();
 
         Task<AddressDto[]> GetAddressMasterData();
     }

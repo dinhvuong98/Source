@@ -27,13 +27,15 @@ namespace Source.App_Start
             services.AddTransient<IBaseService, BaseService>();
             services.AddTransient<ITokenService, TokenService>();
             services.AddTransient<IUserService, UserService>();
-            services.AddTransient<IDataService, DataService>();
+            services.AddTransient<IMasterDataService, MasterDataService>();
             services.AddTransient<ISessionService, SessionService>();
             services.AddTransient<INotificationService, NotificationService>();
             services.AddTransient<ICacheProvider, RedisCacheProvider>();
             services.AddTransient<IWorkService, WorkService>();
             services.AddTransient<IFileService, FileService>();
             services.AddTransient<IShrimpCropService, ShrimpCropService>();
+            services.AddTransient<IGroupService, GroupService>();
+            services.AddTransient<IManagementFactorService, ManagementFactorService>();
 
             Mapper.Initialize(cfg => cfg.AddProfile<DtoMappingProfile>());
         }

@@ -16,24 +16,27 @@ using System.Threading.Tasks;
 using Utilities.Enums;
 using Utilities.Exceptions;
 using Utilities.Helpers;
+using Microsoft.Extensions.Logging;
 
 namespace Services.Implementation.Common
 {
     public class WorkService : BaseService, IWorkService
     {
         private readonly ISessionService _sessionService;
+        private readonly ILogger<WorkService> _logger;
 
-        public WorkService(DatabaseConnectService databaseConnectService, ISessionService sessionService) : base(databaseConnectService)
+        public WorkService(DatabaseConnectService databaseConnectService, ISessionService sessionService, ILogger<WorkService> logger) : base(databaseConnectService)
         {
             _sessionService = sessionService;
+            _logger = logger;
             DatabaseConnectService = databaseConnectService;
         }
 
         #region Public methods
-        
 
         public async Task<PageResultDto<WorkDto>> FilterWork(PageDto pageDto, FilterParamWorkDto filterParamWorkDto)
         {
+            _logger.LogInformation("start method filter work");
             if (filterParamWorkDto.FromDate > filterParamWorkDto.ToDate)
             {
                 throw new BusinessException("Invalid parameter!", ErrorCode.INVALID_PARAMETER);
@@ -107,11 +110,14 @@ namespace Services.Implementation.Common
                 TotalPages = (int)Math.Ceiling(count / (double)pageDto.PageSize),
             };
 
+            _logger.LogInformation("end method filter work");
+
             return result;
         }
 
         public async Task<bool> StopWork(Guid shrimpCropManagementFactorId)
         {
+            _logger.LogInformation("start method stop work");
             var works = await GetWorks(shrimpCropManagementFactorId);
 
             using (IDbTransaction transaction = this.DatabaseConnectService.Connection.BeginTransaction())
@@ -139,6 +145,8 @@ namespace Services.Implementation.Common
                         transaction.Commit();
                     }
 
+                    _logger.LogInformation("end method stop work");
+
                     return true;
                 }
                 catch (Exception e)
@@ -149,8 +157,10 @@ namespace Services.Implementation.Common
             }
         }
 
-        public async Task<RecordResultDto> RecordWord(RecordDto dto)
+        public async Task<RecordResultDto> RecordWork(RecordDto dto)
         {
+            _logger.LogInformation("start method record work");
+
             ValidateRecordWork(dto);
 
             var work = await GetWorkById(dto.WorkId);
@@ -163,6 +173,8 @@ namespace Services.Implementation.Common
 
             await this.DatabaseConnectService.Connection.UpdateAsync<Work>(work);
 
+            _logger.LogInformation("end method record work");
+
             return new RecordResultDto
             {
                 result = true,
@@ -172,6 +184,8 @@ namespace Services.Implementation.Common
 
         public async Task<bool> UpdatePicture(UpdateWorkPictureDto dto)
         {
+            _logger.LogInformation("start method update picture");
+
             var count = await this.DatabaseConnectService.Connection.CountAsync<WorkPicture>(x => x
                         .Where($"bys_work_picture.work_id = @WorkId")
                         .WithParameters(new { WorkId = dto.WorkId }));
@@ -194,6 +208,9 @@ namespace Services.Implementation.Common
                     }
 
                     transaction.Commit();
+
+                    _logger.LogInformation("end method update picture");
+
                     return true;
                 }
                 catch (Exception e)

@@ -22,11 +22,11 @@ namespace Services.Implementation.Common
     public class NotificationService : BaseService, INotificationService
     {
         private readonly ISessionService _sessionSevice;
-        private readonly IDataService _dataService;
+        private readonly IMasterDataService _dataService;
 
         #region Construtor
 
-        public NotificationService(DatabaseConnectService databaseConnectService, ISessionService sesionService, IDataService dataService) : base(databaseConnectService)
+        public NotificationService(DatabaseConnectService databaseConnectService, ISessionService sesionService, IMasterDataService dataService) : base(databaseConnectService)
         {
             _dataService = dataService;
             _sessionSevice = sesionService;
@@ -40,7 +40,6 @@ namespace Services.Implementation.Common
         public async Task<PageResultDto<NotificationDto>> FilterNotification(PageDto pageDto)
         {
             var query = new StringBuilder();
-
             query.Append("SELECT a.id as Id, a.type as Type , a.execution_time as ExecutionTime , a.from_date as FromDate, a.to_date as ToDate , a.status as Status, a.frequency as Frequency, ");
             query.Append("      b.id as FarmingLocationId, b.name as FarmingLocationName, b.code as FarmingLocationCode, ");
             query.Append("      c.id as ManagementFactorId, c.name as ManagementFactorName, c.code as ManagementFactorCode, ");

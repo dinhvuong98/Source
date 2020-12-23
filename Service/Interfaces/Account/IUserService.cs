@@ -23,16 +23,6 @@ namespace Services.Interfaces.Account
 
         Task<DetailUserResultDto> CreateOrUpdateUser(CreateOrUpdateUserDto dto);
 
-        Task<GroupDto[]> GetAllGroup();
-
-        Task<PageResultDto<GroupDto>> FilterGroup(PageDto pageDto, string searchKey);
-
-        Task<GroupDto> GetGroupById(Guid id);
-
-        Task<FeatureDto[]> GetAllFeature();
-
-        Task<GroupDto> CreateGroup(CreateGroupDto dto);
-
         Task<bool> CheckAccount(CheckAccountDto dto);
 
         Task<bool> DeleteUser(Guid[] ids);

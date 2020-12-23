@@ -1,9 +1,12 @@
 ﻿using Dapper.FastCrud;
 using Data;
+using Data.Entity.Account;
 using Data.Entity.Common;
 using Microsoft.Extensions.Logging;
+using Services.Dtos.Account;
 using Services.Dtos.Common;
 using Services.Dtos.Common.InputDtos;
+using Services.Implementation.Account.Helpers;
 using Services.Implementation.Common.Helpers;
 using Services.Interfaces.Common;
 using Services.Interfaces.Internal;
@@ -20,24 +23,20 @@ using Utilities.Enums;
 
 namespace Services.Implementation.Common
 {
-    public class DataService : BaseService, IDataService
+    public class MasterDataService : BaseService, IMasterDataService
     {
         #region Properties
-        private readonly ILogger<DataService> _logger;
-        private readonly ISessionService _sessionService;
-        private readonly ICacheProvider _redisCache;
+        private readonly ILogger<MasterDataService> _logger;
         #endregion
 
         #region #Constructor
-        public DataService(
+        public MasterDataService(
             DatabaseConnectService databaseConnectService, 
-            ILogger<DataService> logger, 
+            ILogger<MasterDataService> logger, 
             ISessionService sessionService,
             ICacheProvider cacheProvider) : base(databaseConnectService)
         {
             _logger = logger;
-            _sessionService = sessionService;
-            _redisCache = cacheProvider;
             DatabaseConnectService = databaseConnectService;
         }
 
@@ -168,56 +167,7 @@ namespace Services.Implementation.Common
             return result;
         }
 
-        public async Task<ShortManagementFactorDto[]> GetAllManagementFactor()
-        {
-            var managementFactorList = (await this.DatabaseConnectService.Connection.FindAsync<ManagementFactor>())
-                                      .OrderByDescending(x => x.CreatedAt)
-                                      .Select(x => x.ToShortManagementFactorDto()).ToArray();
-
-            return managementFactorList;
-        }
-
-        public async Task<PageResultDto<ManagementFactorDto>> FilterManagementFactor(PageDto pageDto, string searchKey, string dataType, string factorGroup)
-        {
-            var query = new StringBuilder();
-            query.Append("(@DataType is null OR bys_management_factor.data_type LIKE @DataType)");
-            query.Append(" AND (@FactorGroup is null OR bys_management_factor.factor_group LIKE @FactorGroup)");
-            query.Append(" AND (@SearchKey is null or (bys_management_factor.name LIKE @SearchKey OR bys_management_factor.description LIKE @SearchKey))");
-            query.Append(" AND bys_management_factor.status = @Status");
-
-            var param = new
-            {
-                DataType = dataType.FormatSearch(),
-                FactorGroup = factorGroup.FormatSearch(),
-                SearchKey = searchKey.FormatSearch(),
-                Status = EntityStatus.Alive.ToString()
-            };
-
-            var factorGroups = await GetMasterData(CommonConstants.FACTOR_GROUP);
-
-            var count = await this.DatabaseConnectService.Connection.CountAsync<ManagementFactor>(x => x
-                                    .Include<MeasureUnit>(join => join.LeftOuterJoin())
-                                    .Where($"{query}")
-                                    .WithParameters(param));
-            var items = (await this.DatabaseConnectService.Connection.FindAsync<ManagementFactor>(x => x
-                                    .Include<MeasureUnit>(join => join.LeftOuterJoin())
-                                    .Where($"{query}")
-                                    .WithParameters(param)))
-                                    .Skip(pageDto.Page * pageDto.PageSize)
-                                    .Take(pageDto.PageSize)
-                                    .Select(x => x.ToManagementFactorDto(factorGroups.FirstOrDefault().Childs.Where(y => y.Code == x.FactorGroup).FirstOrDefault())).ToArray();
-
-            var result = new PageResultDto<ManagementFactorDto>
-            {
-                Items = items,
-                TotalCount = count,
-                PageIndex = pageDto.Page,
-                PageSize = pageDto.PageSize,
-                TotalPages = (int)Math.Ceiling(count / (double)pageDto.PageSize),
-            };
-
-            return result;
-        }
+        
 
         public async Task<MasterDataResultDto[]> GetMasterData(string groupsName)
         {
@@ -240,10 +190,9 @@ namespace Services.Implementation.Common
 
             return result.ToArray();
         }
+
         public async Task<AddressDto[]> GetAddressMasterData()
         {
-            _logger.LogInformation("start method get address master data");
-
             var countries = await this.DatabaseConnectService.Connection.FindAsync<Country>(x => x
                           .Include<Province>(j => j.LeftOuterJoin())
                           .Include<District>(j => j.LeftOuterJoin())
@@ -252,9 +201,19 @@ namespace Services.Implementation.Common
                           .WithParameters(new {Id = 0 }));
 
             var result = countries.Select(x => x.ToAddressDto()).OrderBy(x => x.Name).ToArray();
-            _logger.LogInformation("end method get address master data");
+
             return result;
         }
+
+        public async Task<FeatureDto[]> GetAllFeature()
+        {
+            var result = (await this.DatabaseConnectService.Connection.FindAsync<Feature>(x => x
+                            .Where($"bys_feature.status = @Status")
+                            .WithParameters(new { Status = EntityStatus.Alive.ToString() })))
+                            .Select(x => x.ToFeatureDto()).ToArray();
+            return result;
+        }
+
         #endregion
     }
 }

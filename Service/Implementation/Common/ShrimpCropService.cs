@@ -8,7 +8,6 @@ using Quartz.Util;
 using Services.Dtos.Common;
 using Services.Dtos.Common.InputDtos;
 using Services.Implementation.Common.Helpers;
-using Services.Interfaces.Common;
 using Services.Interfaces.Internal;
 using Services.Interfaces.RedisCache;
 using System;
@@ -27,7 +26,7 @@ namespace Services.Implementation.Common
     public class ShrimpCropService : BaseService, IShrimpCropService
     {
         #region Properties
-        private readonly ILogger<DataService> _logger;
+        private readonly ILogger<ShrimpCropService> _logger;
         private readonly ISessionService _sessionService;
         private readonly ICacheProvider _redisCache;
         #endregion
@@ -35,7 +34,7 @@ namespace Services.Implementation.Common
         #region #Constructor
         public ShrimpCropService(
             DatabaseConnectService databaseConnectService,
-            ILogger<DataService> logger,
+            ILogger<ShrimpCropService> logger,
             ISessionService sessionService,
             ICacheProvider cacheProvider) : base(databaseConnectService)
         {
@@ -48,6 +47,7 @@ namespace Services.Implementation.Common
 
         public async Task<ShrimpCropDto[]> GetAllShrimpCrop()
         {
+            _logger.LogInformation("start method get all shrimp crop");
             var result = (await this.DatabaseConnectService.Connection.FindAsync<ShrimpCrop>(x => x
                         .Include<FarmingLocation>(join => join.LeftOuterJoin())
                         .Include<ShrimpBreed>(join => join.LeftOuterJoin())
@@ -55,7 +55,7 @@ namespace Services.Implementation.Common
                         .OrderByDescending(x => x.CreatedAt)
                         .Select(x => x.ToShrimpCropDto())
                         .ToArray();
-
+            _logger.LogInformation("end method get all shirmp crop");
             return result;
         }
 
@@ -83,6 +83,7 @@ namespace Services.Implementation.Common
 
         public async Task<ShrimpCropResultDto> GetShrimpCropById(Guid id)
         {
+            _logger.LogInformation("start methid get shrimp crop");
             var result = (await this.DatabaseConnectService.Connection.FindAsync<ShrimpCrop>(x => x
                         .Include<FarmingLocation>(join => join.LeftOuterJoin())
                         .Include<ShrimpBreed>(join => join.LeftOuterJoin())
@@ -92,11 +93,15 @@ namespace Services.Implementation.Common
                         .Where($"bys_shrimp_crop.id = @Id")
                         .WithParameters(new { Id = id }))).Select(x => x.ToShrimpCropResultDto()).FirstOrDefault();
 
-            return result == null ? throw new BusinessException("", ErrorCode.INTERNAL_SERVER_ERROR) : result;
+            _logger.LogInformation("end method get shrimp crop");
+
+            return result;
         }
 
         public async Task<PageResultDto<ShrimpCropDto>> FilterShrimpCrop(PageDto pageDto, string searchKey, string farmingLocationId, string shrimpBreedId)
         {
+            _logger.LogInformation("start method filter shrimpcrop");
+
             var query = new StringBuilder();
             query.Append("(@SearchKey is null or (bys_shrimp_crop.name LIKE @SearchKey OR bys_shrimp_crop.code LIKE @SearchKey))");
             query.Append(" AND (@FarmingLocationId is null or bys_shrimp_crop.farming_location_id LIKE @FarmingLocationId)");
@@ -136,11 +141,14 @@ namespace Services.Implementation.Common
                 TotalPages = (int)Math.Ceiling(count / (double)pageDto.PageSize),
             };
 
+            _logger.LogInformation("end method shrimpcrop");
+
             return result;
         }
 
         public async Task<Guid> CreateOrUpdateShrimpCropManagementFactor(CreateShrimpCropManagementFactorDto dto)
         {
+            _logger.LogInformation("start method create or update shirmp crop management factor");
             var shrimpCrop = await GetShrimpCropById(dto.ShrimpCropId);
 
             ValidateCreateShrimpCropManagementFactor(dto, shrimpCrop.FromDate, shrimpCrop.ToDate);
@@ -184,6 +192,8 @@ namespace Services.Implementation.Common
 
                     transaction.Commit();
 
+                    _logger.LogInformation("end method create or update shirmp crop management factor");
+
                     return shrimpCropManagementFactor.Id;
                 }
                 catch (Exception)
@@ -196,6 +206,7 @@ namespace Services.Implementation.Common
 
         public async Task<bool> CancelShrimpCropManagementFactor(CancelShrimpCropManagementFactorDto dto)
         {
+            _logger.LogInformation("cancel shrimp crop management factor");
             var shrimpCropManagementFactor = await GetShrimpCropManagementFactorById(dto.ShrimpCropManagementFactoId);
 
             shrimpCropManagementFactor.Status = CropFactorStatus.StopWork.ToString();
@@ -205,6 +216,8 @@ namespace Services.Implementation.Common
             shrimpCropManagementFactor.ModifiedBy = _sessionService.UserId;
 
             await this.DatabaseConnectService.Connection.UpdateAsync<ShrimpCropManagementFactor>(shrimpCropManagementFactor);
+
+            _logger.LogInformation("end method cancel shirmp crop management factor");
 
             return true;
         }
@@ -234,7 +247,7 @@ namespace Services.Implementation.Common
                         .Where($"bys_shrimp_crop_management_factor.id = @Id")
                         .WithParameters(new { Id = id }))).FirstOrDefault();
 
-            return result == null ? throw new BusinessException("", ErrorCode.INTERNAL_SERVER_ERROR) : result;
+            return result;
         }
 
         private void ValidateShrimpCrop(CreateShrimpCropDto dto)

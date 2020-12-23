@@ -13,7 +13,7 @@ namespace Services.Interfaces.Common
 
         Task<bool> StopWork(Guid shrimpCropManagementFactorId);
 
-        Task<RecordResultDto> RecordWord(RecordDto dto);
+        Task<RecordResultDto> RecordWork(RecordDto dto);
 
         Task<bool> UpdatePicture(UpdateWorkPictureDto dto);
     }

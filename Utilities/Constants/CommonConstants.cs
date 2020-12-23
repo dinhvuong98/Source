@@ -34,6 +34,8 @@ namespace Utilities.Constants
         public static readonly string AddressMasterData = "AddressMasterData";
         public static readonly string AllGroup = "AllGroup";
         public static readonly string AllFeature = "AllFeature";
+        public static readonly string AllShrimpBreed = "AllShrimBreed";
+        public static readonly string AllManagementFactor = "AllManagementFactor";
 
     }
 

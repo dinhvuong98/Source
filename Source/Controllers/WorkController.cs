@@ -67,7 +67,7 @@ namespace Source.Controllers
 
             var response = new BaseResponse<RecordResultDto>
             {
-                Data = await _workService.RecordWord(dto),
+                Data = await _workService.RecordWork(dto),
                 Status = true
             };
 

@@ -19,16 +19,14 @@ namespace Source.Controllers
     public class MasterDataController : BaseApiController
     {
         #region Properties
-        private readonly IDataService _dataService;
-        private readonly IUserService _userService;
+        private readonly IMasterDataService _dataService;
         private readonly ICacheProvider _redisCache;
         #endregion
 
         #region Constructor
-        public MasterDataController(IDataService dataService, IUserService userService, ICacheProvider redisCache)
+        public MasterDataController(IMasterDataService dataService, ICacheProvider redisCache)
         {
             _dataService = dataService;
-            _userService = userService;
             _redisCache = redisCache;
         }
         #endregion
@@ -103,11 +101,28 @@ namespace Source.Controllers
         [HttpGet("shrimp-breed/get-all")]
         public async Task<BaseResponse<ShortShrimpBreedDto[]>> GetAllShrimpBreed()
         {
+            var result = _redisCache.GetByKey<ShortShrimpBreedDto[]>(CacheConst.AllShrimpBreed);
+
             var response = new BaseResponse<ShortShrimpBreedDto[]>
             {
-                Data = await _dataService.GetAllShrimpBreed(),
-                Status = true
+                Status = false
             };
+
+            if (result == null)
+            {
+                result = await _dataService.GetAllShrimpBreed();
+                _redisCache.Set(CacheConst.AllShrimpBreed, result, TimeSpan.FromHours(1));
+            }
+
+            if (result.Length > 0)
+            {
+                response.Data = result;
+                response.Status = true;
+            }
+            else
+            {
+                response.Error = new Error("Get data not success!", ErrorCode.GET_DATA_NOT_SUCCESS);
+            }
 
             return await Task.FromResult(response);
         }
@@ -182,7 +197,7 @@ namespace Source.Controllers
 
             if (result == null)
             {
-                result = await _userService.GetAllFeature();
+                result = await _dataService.GetAllFeature();
                 _redisCache.Set(CacheConst.AllFeature, result, TimeSpan.FromHours(1));
             }
 
