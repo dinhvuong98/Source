@@ -6,3 +6,4 @@ D:\VUONG\Project .net core\Source\Utilities\obj\Debug\netcoreapp3.1\Utilities.As
 D:\VUONG\Project .net core\Source\Utilities\obj\Debug\netcoreapp3.1\Utilities.csproj.CoreCompileInputs.cache
 D:\VUONG\Project .net core\Source\Utilities\obj\Debug\netcoreapp3.1\Utilities.dll
 D:\VUONG\Project .net core\Source\Utilities\obj\Debug\netcoreapp3.1\Utilities.pdb
+D:\VUONG\Project .net core\Source\Utilities\obj\Debug\netcoreapp3.1\Utilities.csprojAssemblyReference.cache
